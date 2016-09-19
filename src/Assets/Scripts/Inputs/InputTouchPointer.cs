@@ -1,8 +1,7 @@
 ﻿using UnityEngine;
-using System.Collections;
 using UnityEngine.EventSystems;
 
-namespace Asteroids
+namespace Snake
 {
 	[AddComponentMenu("SNAKE/Input Touch Pointer")]
 	public class InputTouchPointer : MonoBehaviour, IPointerDownHandler, IPointerUpHandler

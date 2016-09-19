@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
 
 namespace Snake
 {
@@ -7,11 +6,11 @@ namespace Snake
 	{
 		public static IInputController GetCurrentInputController()
 		{
-			//#if UNITY_ANDROID
-			//return new InputTouchController();
-			//#else
-			return new InputKeyboardController();
-			//#endif
+			#if UNITY_ANDROID
+			return new InputTouchController ();
+			#else
+			return new InputKeyboardController ();
+			#endif
 		}
 	}
 }
