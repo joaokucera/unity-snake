@@ -8,7 +8,7 @@ namespace Snake
 	{	
 		private Coroutine m_hideCoroutine;
 
-		[Range(0f, 15f)] [SerializeField] private float m_hideCountdown;
+		[Range(0f, 30f)] [SerializeField] private float m_hideCountdown;
 
 		public void Spawn (float width, float height)
 		{

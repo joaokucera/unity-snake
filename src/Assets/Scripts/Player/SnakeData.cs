@@ -12,6 +12,7 @@ namespace Snake
 		public SnakeData ()
 		{
 			HighScore = PlayerPrefs.GetInt (m_highscoreKey);
+
 			CurrentLength = 0;
 		}
 

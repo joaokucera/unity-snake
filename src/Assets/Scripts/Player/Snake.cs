@@ -18,12 +18,13 @@ namespace Snake
 		private float m_startMoveSpeed;
 		private List<Transform> m_tail;
 		private Coroutine m_moveCoroutine;
-		private Item m_pickedUpItem;
+		private NumberItem m_numberItem;
+		private bool m_isReversing;
 
 		[SerializeField] private TailSpawner m_tailSpawner;
 		[Range(0f, 2f)] [SerializeField] private float m_moveSpeed;
 		[Range(0f, 1f)] [SerializeField] private float m_incrementSpeed;
-		[Range(0f, 5f)] [SerializeField] private float m_bonusSlowdown;
+		[Range(0f, 10f)] [SerializeField] private float m_bonusSlowdown;
 
 		public static SnakeData Data;
 
@@ -39,6 +40,8 @@ namespace Snake
 			m_startMoveSpeed = m_moveSpeed;
 			m_tail = new List<Transform> ();
 
+			GameUI.Instance.UpdateLength (1);
+
 			m_moveCoroutine = StartCoroutine (Move ());
 		}
 
@@ -53,8 +56,9 @@ namespace Snake
 			{
 				SoundManager.Instance.PlaySoundEffect ("Item Pickup");
 
-				m_pickedUpItem = collider.GetComponent <Item> ();
-				m_pickedUpItem.Hide ();
+				var item = collider.GetComponent <Item> ();
+
+				ExecuteItemBehaviour (item);
 			}
 			else 
 			{
@@ -72,46 +76,57 @@ namespace Snake
 			{
 				yield return new WaitForSeconds (m_moveSpeed);
 
-				var currentPosition = transform.localPosition;
-
-				SoundManager.Instance.PlaySoundEffect (sfxMove [Random.Range (0, sfxMove.Length)]);
-				transform.Translate (m_direction);
-
-				if (m_pickedUpItem != null)
+				if (m_isReversing) 
 				{
-					ExecuteItemBehaviour (currentPosition);
+					ReverseSnakeHead ();
 
-					m_pickedUpItem = null;
-				}
-				else if (m_tail.Count > 0) 
+					m_isReversing = false;
+				} 
+				else 
 				{
-					m_tail.Last ().localPosition = currentPosition;
+					var currentPosition = transform.localPosition;
 
-					m_tail.Insert (0, m_tail.Last());
-					m_tail.RemoveAt (m_tail.Count - 1);
+					SoundManager.Instance.PlaySoundEffect (sfxMove [Random.Range (0, sfxMove.Length)]);
+					transform.Translate (m_direction);
+
+					if (m_numberItem != null) 
+					{
+						IncreaseTailAndSpeed (currentPosition);
+
+						m_numberItem = null;
+					} 
+					else if (m_tail.Count > 0) 
+					{
+						m_tail.Last ().localPosition = currentPosition;
+
+						m_tail.Insert (0, m_tail.Last ());
+						m_tail.RemoveAt (m_tail.Count - 1);
+					}
 				}
 			}
 		}
 
-		private void ExecuteItemBehaviour (Vector2 currentPosition)
+		private void ExecuteItemBehaviour (Item item)
 		{
-			switch (m_pickedUpItem.Kind)
+			item.Hide ();
+
+			switch (item.Kind)
 			{
 				case ItemKind.Number:
-					IncreaseTailAndSpeed (currentPosition);
+					m_numberItem = item as NumberItem;
 					break;
 				case ItemKind.Bonus:
 					SlowdownSpeedTemporarily ();
 					break;
 				case ItemKind.Reverse:
-					ReverseSnakeHead ();
+					m_isReversing = true;
 					break;
 			}
 		}
 
 		private void IncreaseTailAndSpeed (Vector2 currentPosition)
 		{
-			int value = (m_pickedUpItem as NumberItem).Value;
+			int value = m_numberItem.Value;
 			GameUI.Instance.UpdateLength (value);
 
 			for (int i = 0; i < value; i++)
@@ -153,30 +168,59 @@ namespace Snake
 				return;
 			}
 
-			var lastTail = m_tail.Last ();
 			var currentPosition = transform.localPosition;
+			transform.localPosition = m_tail.Last ().localPosition;
+			m_tail.Last ().localPosition = currentPosition;
 
-			transform.localPosition = lastTail.localPosition;
-			lastTail.localPosition = currentPosition;
-
+			m_tail.Insert (0, m_tail.Last ());
+			m_tail.RemoveAt (m_tail.Count - 1);
 			m_tail.Reverse ();
 
 			if (m_direction == Vector2.right)
 			{
-				m_direction = Vector2.left;
+				EvaluateDirectionWithoutCollision (Vector2.left, Vector2.up, Vector2.down);
 			}
 			else if (m_direction == Vector2.left)
 			{
-				m_direction = Vector2.right;
+				EvaluateDirectionWithoutCollision (Vector2.right, Vector2.up, Vector2.down);
 			}
 			else if (m_direction == Vector2.up)
 			{
-				m_direction = Vector2.down;
+				EvaluateDirectionWithoutCollision (Vector2.down, Vector2.right, Vector2.left);
 			}
 			else if (m_direction == Vector2.down)
 			{
-				m_direction = Vector2.up;
+				EvaluateDirectionWithoutCollision (Vector2.up, Vector2.right, Vector2.left);
 			}
+		}
+
+		private void EvaluateDirectionWithoutCollision (params Vector2[] directionOptions)
+		{
+			Vector3 direction = directionOptions.First ();
+
+			for (int i = 0; i < directionOptions.Length; i++)
+			{
+				bool hasCollision = false;
+
+				for (int l = 0; l < m_tail.Count; l++)
+				{
+					if (transform.localPosition + direction == m_tail[l].localPosition) 
+					{
+						hasCollision = true;
+
+						break;
+					}
+				}
+
+				if (!hasCollision)
+				{
+					break;
+				}
+
+				direction = directionOptions [i];
+			}
+
+			m_direction = direction;
 		}
 
 		private void Stop ()
