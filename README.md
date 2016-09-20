@@ -1,4 +1,4 @@
-# AA snake-like game made with unity (v 5.4.0) #
+# A snake-like game made with unity (v 5.4.0) #
 
 It's a repository for a prototype made in a day. Feel free to download, there isn't no license, no condition, just download it and use as you want. I hope this help you to study unity.
 
